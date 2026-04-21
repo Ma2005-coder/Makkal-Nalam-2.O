@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply antialiased text-slate-900 bg-slate-50;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Bulletin Scroll Animation */
+@keyframes scroll-bulletin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+.animate-bulletin {
+  animation: scroll-bulletin 15s linear infinite;
+}
+
+.animate-bulletin:hover {
+  animation-play-state: paused;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

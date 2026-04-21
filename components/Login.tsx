@@ -300,7 +300,7 @@ const Login: React.FC<LoginProps> = ({ language, onLogin }) => {
 
         <div className="bg-slate-50 p-6 border-t border-slate-100 flex items-center justify-center gap-4 mt-auto">
            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_NfNf6Yv9Qp8vC_uXhKqB8iUuFvV_C_8xjg&s" className="h-8 grayscale opacity-50" alt="TN Gov" />
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital India • Tamil Nadu e-Governance</p>
+           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.digitalIndiaNotice}</p>
         </div>
       </div>
     </div>

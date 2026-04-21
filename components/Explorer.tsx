@@ -327,7 +327,7 @@ const Explorer: React.FC<ExplorerProps> = ({ language, onApplyNow }) => {
                   <div className="space-y-4">
                     <h3 className="text-3xl md:text-4xl font-black tracking-tight">{isTa ? 'திட்டங்களைக் கண்டறியவும்' : 'Discover Welfare Schemes'}</h3>
                     <p className="text-emerald-100/70 text-base md:text-lg max-w-md mx-auto font-medium leading-relaxed">
-                      Select a sector from the left to browse programs or use the search bar to find a specific scheme by name.
+                      {isTa ? 'திட்டங்களை உலாவ இடதுபுறத்தில் இருந்து ஒரு துறையைத் தேர்ந்தெடுக்கவும் அல்லது ஒரு குறிப்பிட்ட திட்டத்தைக் கண்டறிய தேடல் உரையாடலைப் பயன்படுத்தவும்.' : 'Select a sector from the left to browse programs or use the search bar to find a specific scheme by name.'}
                     </p>
                   </div>
                </div>

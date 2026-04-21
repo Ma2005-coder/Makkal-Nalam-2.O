@@ -47,8 +47,51 @@ const Grievance: React.FC<{ language: Language }> = ({ language }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    const sessionIdentifier = localStorage.getItem('current_session');
+
     setTimeout(() => {
       const generatedId = `GRV-TN-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+      
+      if (sessionIdentifier) {
+        const saved = localStorage.getItem(`user_profile_${sessionIdentifier}`);
+        let profile: any;
+
+        if (saved) {
+          profile = JSON.parse(saved);
+        } else {
+          profile = {
+            name: '',
+            phone: sessionIdentifier,
+            civicIssues: [],
+            grievances: [],
+            activeApplications: [],
+            reminders: [],
+            documents: {},
+            permAddress: { doorNo: '', village: '', taluk: '', district: '', pincode: '' },
+            tempAddress: { doorNo: '', village: '', taluk: '', district: '', pincode: '' },
+            isSameAddress: true
+          };
+        }
+
+        const newGrievance = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: aiAnalysis?.department || t.general,
+          location: t.userRegisteredAddress,
+          description: description,
+          status: 'logged',
+          dateReported: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          refNumber: generatedId,
+          roadmap: [
+              { label: t.registered, status: 'completed' },
+              { label: t.assigned, status: 'current' },
+              { label: t.hearing, status: 'upcoming' },
+              { label: t.resolved, status: 'upcoming' }
+          ]
+        };
+        profile.grievances = [newGrievance, ...(profile.grievances || [])];
+        localStorage.setItem(`user_profile_${sessionIdentifier}`, JSON.stringify(profile));
+      }
+
       setRefId(generatedId);
       setSubmitting(false);
       setSuccess(true);

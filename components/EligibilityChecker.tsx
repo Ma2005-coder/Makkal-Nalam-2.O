@@ -16,6 +16,7 @@ const TN_PRESET_SCHEMES = [
 
 const PathNode: React.FC<{ step: RoadmapStepItem; isLast?: boolean; index: number; language: Language }> = ({ step, isLast, index, language }) => {
   const isTa = language === 'ta';
+  const t = translations[language];
   const isCompleted = step.status === 'completed';
   const isCurrent = step.status === 'current';
   
@@ -63,13 +64,24 @@ const PathNode: React.FC<{ step: RoadmapStepItem; isLast?: boolean; index: numbe
               isCurrent ? 'bg-amber-200 text-amber-900 shadow-inner' : 'bg-slate-50 text-slate-400'
             }`}>
               {isCompleted ? <CheckCircle size={10} /> : <Clock size={10} />}
-              {isCompleted ? (isTa ? 'முடிந்தது' : 'Verified') : 
-               isCurrent ? (isTa ? 'தற்போது' : 'Active Stage') : (isTa ? 'அடுத்து' : 'Next Milestone')}
+              {isCompleted ? t.verified : 
+               isCurrent ? t.active : (isTa ? 'அடுத்து' : 'Next Milestone')}
             </div>
           </div>
-          <p className={`text-sm font-medium leading-relaxed ${isCurrent ? 'text-amber-800/80' : 'text-slate-500'}`}>
+          <p className={`text-sm font-medium leading-relaxed mb-4 ${isCurrent ? 'text-amber-800/80' : 'text-slate-500'}`}>
             {step.description}
           </p>
+
+          {step.authority && (
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${
+              isCurrent ? 'bg-amber-100 border-amber-200 text-amber-900' : 
+              isCompleted ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-slate-50 border-slate-100 text-slate-500'
+            }`}>
+              <Landmark size={12} className="shrink-0" />
+              <span className="opacity-60 mr-1">{isTa ? 'நிர்வாகம்:' : 'Authority:'}</span>
+              {step.authority}
+            </div>
+          )}
           
           {isCurrent && (
             <div className="mt-6 flex items-center gap-3 animate-in fade-in slide-in-from-left duration-700">
@@ -226,13 +238,27 @@ const AddressBlock: React.FC<AddressBlockProps> = ({ title, type, data, disabled
           const res = await reverseGeocodeToTN(pos.coords.latitude, pos.coords.longitude, language);
           if (res.district && res.taluk) {
             onBulkUpdate(type, {
+              doorNo: res.doorNo || data.doorNo,
               district: res.district,
               taluk: res.taluk,
               village: res.village,
               pincode: res.pincode
             });
-            if (!taluks.includes(res.taluk)) setIsManualTaluk(true);
-            if (!predefinedVillages.includes(res.village)) setIsManualVillage(true);
+            
+            // Re-fetch taluks/villages for the new district to check if manual entry is needed
+            const currentDistTaluks = isTa ? TN_TALUKS_TA[res.district] : TN_TALUKS[res.district];
+            if (currentDistTaluks && !currentDistTaluks.includes(res.taluk)) {
+              setIsManualTaluk(true);
+            } else {
+              setIsManualTaluk(false);
+            }
+
+            const currentTalukVillages = isTa ? TN_VILLAGES_TA[res.taluk] : TN_VILLAGES[res.taluk];
+            if (currentTalukVillages && !currentTalukVillages.includes(res.village)) {
+              setIsManualVillage(true);
+            } else {
+              setIsManualVillage(false);
+            }
           }
         } catch (e) {
           console.error(e);
@@ -647,16 +673,43 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ language, initi
 
   if (applicationStep === 'applying') {
     return (
-      <div className="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 animate-in fade-in duration-700">
+      <div className="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-10 animate-in fade-in zoom-in duration-700">
         <div className="relative">
-          <div className="w-32 h-32 bg-emerald-100 rounded-full flex items-center justify-center animate-pulse">
-            <Landmark size={48} className="text-emerald-600" />
+          {/* Outer Rotating Ring */}
+          <div className="absolute inset-[-20px] border-4 border-emerald-100 rounded-full blur-[2px]" />
+          <div className="absolute inset-[-20px] border-4 border-emerald-600 border-t-transparent rounded-full animate-[spin_3s_linear_infinite]" />
+          
+          {/* Inner Pulsing Circle with Icon */}
+          <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl relative z-10 border border-slate-50">
+            <div className="absolute inset-4 bg-emerald-50 rounded-full animate-pulse" />
+            <Landmark size={64} className="text-emerald-600 relative z-10 drop-shadow-sm" />
+            
+            {/* Tiny Orbiting Detail */}
+            <div className="absolute inset-0 animate-[spin_4s_linear_infinite]">
+              <div className="w-4 h-4 bg-emerald-500 rounded-lg absolute -top-2 left-1/2 -translate-x-1/2 rotate-45" />
+            </div>
           </div>
-          <div className="absolute inset-0 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+
+          {/* Verification Status Micro-badge */}
+          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap shadow-xl border border-slate-800 flex items-center gap-2">
+            <Loader2 className="animate-spin" size={12} />
+            {t.verifying}
+          </div>
         </div>
-        <div className="space-y-3">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">{isTa ? "நடைமுறைகளைத் தயாரிக்கிறது..." : "Mapping Official Procedures..."}</h2>
-          <p className="text-slate-500 font-medium max-w-sm mx-auto">{t.preparingRoadmap}</p>
+
+        <div className="space-y-4 max-w-md">
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">
+            {t.mappingProcedures}
+          </h2>
+          <p className="text-slate-500 font-medium text-lg leading-relaxed">
+            {t.preparingRoadmap}
+          </p>
+          
+          <div className="flex items-center justify-center gap-1.5 pt-4">
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce" />
+          </div>
         </div>
       </div>
     );
@@ -713,6 +766,16 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ language, initi
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            {result?.portalUrl && result.portalUrl.includes('http') && (
+              <button 
+                onClick={redirectToPortal} 
+                disabled={isRedirecting}
+                className="group w-full sm:w-auto py-6 px-12 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl hover:bg-indigo-700 shadow-2xl transition-all uppercase tracking-widest active:scale-95 flex items-center justify-center gap-4"
+              >
+                {isRedirecting ? <Loader2 className="animate-spin text-white" size={24} /> : <ExternalLink size={24} />}
+                {isRedirecting ? (language === 'ta' ? 'இணைக்கப்படுகிறது...' : 'Redirecting...') : t.officialPortal}
+              </button>
+            )}
             <button 
               onClick={() => setApplicationStep('select')} 
               className="group w-full sm:w-auto py-6 px-16 bg-slate-900 text-white rounded-[2.5rem] font-black text-xl hover:bg-black shadow-2xl transition-all uppercase tracking-widest active:scale-95 flex items-center justify-center gap-4"
@@ -977,29 +1040,30 @@ const EligibilityChecker: React.FC<EligibilityCheckerProps> = ({ language, initi
               </div>
               
               {result.isEligible ? (
-                <div className="grid grid-cols-1 gap-4 mt-10 w-full">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                    <button onClick={startApplying} className="py-5 bg-emerald-600 text-white rounded-2xl font-black text-xl hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all flex items-center justify-center gap-3 active:scale-95">
-                       <ChevronRight size={24} /> {t.nextProcedures}
+                <div className="flex flex-col gap-5 mt-10 w-full">
+                  {result.portalUrl && result.portalUrl.includes('http') && (
+                    <button 
+                      id="official-portal-primary-button"
+                      onClick={redirectToPortal} 
+                      disabled={isRedirecting}
+                      className="w-full py-6 bg-slate-950 text-white rounded-[2.5rem] font-black text-2xl hover:bg-black shadow-2xl shadow-slate-900/30 transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 group border-4 border-slate-900/10"
+                    >
+                       {isRedirecting ? <Loader2 className="animate-spin" size={28} /> : <ExternalLink size={28} className="text-emerald-400 group-hover:rotate-12 transition-transform" />}
+                       {isRedirecting ? (language === 'ta' ? 'இணைக்கப்படுகிறது...' : 'Redirecting...') : t.officialPortal}
                     </button>
-                    {result.portalUrl && (
-                      <button 
-                        onClick={redirectToPortal} 
-                        disabled={isRedirecting}
-                        className="py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
-                      >
-                         {isRedirecting ? <Loader2 className="animate-spin" size={24} /> : <ExternalLink size={24} />}
-                         {isRedirecting ? t.verifying : t.officialPortal}
-                      </button>
-                    )}
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                    <button onClick={startApplying} className="py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all flex items-center justify-center gap-3 active:scale-95">
+                       <ChevronRight size={20} /> {t.nextProcedures}
+                    </button>
+                    <button onClick={saveReminder} disabled={isReminded} className={`py-5 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isReminded ? 'bg-slate-100 text-slate-400 cursor-default' : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50'}`}>
+                      <Bookmark size={20} /> {isReminded ? t.savedToVault : t.saveOffline}
+                    </button>
                   </div>
                   
-                  <button onClick={saveReminder} disabled={isReminded} className={`py-5 rounded-2xl font-black text-xl shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isReminded ? 'bg-slate-100 text-slate-400 cursor-default' : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50'}`}>
-                    <Bookmark size={24} /> {isReminded ? t.savedToVault : t.saveOffline}
-                  </button>
-                  
                   {isRedirecting && (
-                    <p className="text-indigo-600 font-black text-[10px] uppercase tracking-widest animate-pulse mt-2">{t.directingToPortal}</p>
+                    <p className="text-center text-slate-400 font-black text-[10px] uppercase tracking-widest animate-pulse">{t.directingToPortal}</p>
                   )}
                 </div>
               ) : (

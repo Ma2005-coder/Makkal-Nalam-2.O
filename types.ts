@@ -45,12 +45,16 @@ export enum AppView {
   VOICE_ASSISTANT = 'VOICE_ASSISTANT',
   GRIEVANCE = 'GRIEVANCE',
   LOCATIONS = 'LOCATIONS',
-  PROFILE = 'PROFILE'
+  ANNOUNCEMENTS = 'ANNOUNCEMENTS',
+  CIVIC_REPORT = 'CIVIC_REPORT',
+  PROFILE = 'PROFILE',
+  HEALTH_MODULE = 'HEALTH_MODULE'
 }
 
 export interface RoadmapStepItem {
   label: string;
   description?: string;
+  authority?: string;
   status: 'completed' | 'current' | 'upcoming';
 }
 
@@ -62,6 +66,21 @@ export interface Application {
   refNumber: string;
   roadmap?: RoadmapStepItem[];
   currentStepIndex?: number;
+  dbtStatus?: {
+    stage: 'treasury' | 'district' | 'bank';
+    amount?: number;
+    transactionId?: string;
+    date?: string;
+  };
+}
+
+export interface ProactiveAlert {
+  id: string;
+  type: 'scheme' | 'document' | 'info';
+  title: string;
+  description: string;
+  schemeId?: string;
+  cta?: string;
 }
 
 export interface Address {
@@ -103,7 +122,28 @@ export interface UserEligibilityData {
     communityCert?: string;
   };
   activeApplications?: Application[];
+  civicIssues?: CivicIssue[];
+  grievances?: CivicIssue[];
   reminders?: Reminder[];
+}
+
+export interface CivicIssue {
+  id: string;
+  type: string;
+  location: string;
+  description: string;
+  status: 'logged' | 'assigned' | 'in-progress' | 'resolved';
+  dateReported: string;
+  refNumber: string;
+  roadmap: RoadmapStepItem[];
+  photo?: string;
+  analysis?: {
+    analysis: string;
+    severity: string;
+    details: string;
+    safetyRisk: string;
+    identifier?: string;
+  };
 }
 
 export type Language = 'en' | 'ta';

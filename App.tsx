@@ -9,6 +9,9 @@ import VoiceAssistant from './components/VoiceAssistant';
 import ServiceCenters from './components/ServiceCenters';
 import MyProfile from './components/MyProfile';
 import Grievance from './components/Grievance';
+import Announcements from './components/Announcements';
+import CivicReport from './components/CivicReport';
+import HealthModule from './components/HealthModule';
 import Login from './components/Login';
 import { AppView, Language } from './types';
 import { translations } from './translations';
@@ -96,6 +99,14 @@ const App: React.FC = () => {
         return <ServiceCenters language={language} />;
       case AppView.GRIEVANCE:
         return <Grievance language={language} />;
+      case AppView.ANNOUNCEMENTS:
+        return <Announcements language={language} />;
+      case AppView.CIVIC_REPORT:
+        return <CivicReport language={language} />;
+      case AppView.HEALTH_MODULE:
+        const saved = localStorage.getItem(`user_profile_${currentUserIdentifier}`);
+        const parsedProfile = saved ? JSON.parse(saved) : null;
+        return <HealthModule language={language} profile={parsedProfile} />;
       case AppView.PROFILE:
         return <MyProfile language={language} onTriggerAlert={triggerDispatchSimulation} />;
       default:

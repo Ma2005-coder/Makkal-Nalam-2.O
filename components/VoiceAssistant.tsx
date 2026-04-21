@@ -55,8 +55,8 @@ const VoiceAssistant: React.FC<{ language: Language }> = ({ language }) => {
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
 
   const getLanguageName = (lang: Language) => {
-    if (lang === 'ta') return 'Tamil';
-    return 'English';
+    if (lang === 'ta') return t.tamil;
+    return t.english;
   };
 
   const stopSession = useCallback(() => {
@@ -70,7 +70,7 @@ const VoiceAssistant: React.FC<{ language: Language }> = ({ language }) => {
 
   const startSession = async () => {
     setStatus('connecting');
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const langName = getLanguageName(language);
 
     try {
@@ -81,7 +81,7 @@ const VoiceAssistant: React.FC<{ language: Language }> = ({ language }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        model: 'gemini-3.1-flash-live-preview',
         callbacks: {
           onopen: () => {
             setStatus('listening');
@@ -162,57 +162,74 @@ const VoiceAssistant: React.FC<{ language: Language }> = ({ language }) => {
   }, [stopSession]);
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white rounded-3xl shadow-xl border border-slate-100">
-      <div className="mb-12">
-        <h2 className="text-3xl font-extrabold text-slate-900 mb-4">{t.voiceHelp}</h2>
-        <p className="text-slate-500 max-w-md mx-auto">
-          {t.speakAssistant} {getLanguageName(language)}.
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto flex flex-col justify-center min-h-[60vh] animate-in slide-in-from-bottom-5 duration-700">
+      <div className="bg-slate-900 p-8 md:p-16 rounded-[4rem] shadow-2xl relative overflow-hidden text-center">
+         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.15),transparent)] pointer-events-none" />
+         
+         <div className="mb-12 relative z-10">
+            <h2 className="text-4xl font-black text-white mb-4 tracking-tight">{t.aiVoiceIntelligence}</h2>
+            <p className="text-slate-400 font-medium max-w-sm mx-auto">{t.talkToMakkalNalam}</p>
+         </div>
 
-      <div className="relative mb-12">
-        <div className={`absolute -inset-8 bg-emerald-500 rounded-full blur-2xl transition-opacity duration-700 ${isActive ? 'opacity-20 animate-pulse' : 'opacity-0'}`} />
-        <button
-          onClick={isActive ? stopSession : startSession}
-          disabled={status === 'connecting'}
-          className={`
-            relative w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-300 transform
-            ${isActive 
-              ? 'bg-red-500 text-white shadow-2xl scale-110' 
-              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl hover:scale-105'}
-            disabled:bg-slate-300
-          `}
-        >
-          {status === 'connecting' ? (
-            <Loader2 size={48} className="animate-spin" />
-          ) : isActive ? (
-            <MicOff size={48} />
-          ) : (
-            <Mic size={48} />
-          )}
-          <span className="mt-2 font-bold text-xs uppercase tracking-widest">
-            {status === 'connecting' ? '...' : isActive ? t.stop : t.start}
-          </span>
-        </button>
+         <div className="flex flex-col items-center justify-center gap-12 relative z-10">
+            <div className="relative group">
+               {isActive && (
+                 <div className="absolute inset-[-40px] flex justify-center items-center pointer-events-none">
+                    <div className="w-40 h-40 border-4 border-emerald-500/20 rounded-full animate-ping" />
+                    <div className="w-40 h-40 border-4 border-emerald-500/10 rounded-full animate-ping [animation-delay:0.5s]" />
+                 </div>
+               )}
+               
+               <button
+                 onClick={isActive ? stopSession : startSession}
+                 className={`w-36 h-36 rounded-[2.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl relative z-20 ${
+                   isActive 
+                   ? 'bg-red-500 text-white rotate-90 scale-90' 
+                   : 'bg-emerald-600 text-white hover:scale-105 active:scale-95'
+                 }`}
+               >
+                 {status === 'connecting' ? (
+                   <Loader2 size={48} className="animate-spin" />
+                 ) : isActive ? (
+                   <MicOff size={48} />
+                 ) : (
+                   <Mic size={48} />
+                 )}
+               </button>
 
-        {status === 'speaking' && (
-           <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-emerald-600 animate-bounce">
-              <Volume2 size={32} />
-           </div>
-        )}
-      </div>
-
-      <div className={`transition-all duration-500 w-full max-w-xl ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 min-h-[120px] text-left">
-          <div className="flex items-center gap-2 mb-2 text-emerald-600 font-bold text-xs uppercase">
-            <div className="flex items-center gap-2 mb-2 text-emerald-600 font-bold text-xs uppercase">
-               <Info size={14} /> {t.listening}
+               <div className={`absolute -bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-500 ${
+                  isActive ? 'bg-emerald-500 border-emerald-400 text-slate-900 shadow-xl' : 'bg-slate-800 border-slate-700 text-slate-500'
+               }`}>
+                  {status.toUpperCase()}
+               </div>
             </div>
-            <p className="text-slate-600 text-sm italic">
-              {transcription || "..."}
-            </p>
-          </div>
-        </div>
+
+            <div className="w-full max-w-md bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-[2.5rem] min-h-[120px] flex flex-col items-center justify-center">
+              {transcription ? (
+                <p className="text-white text-lg font-medium leading-relaxed italic animate-in fade-in slide-in-from-bottom-2 duration-300 px-4">
+                  "{transcription}"
+                </p>
+              ) : (
+                <div className="text-slate-500 font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-3">
+                   <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isActive ? 'animate-bounce' : 'opacity-20'}`} />
+                   <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 [animation-delay:0.2s] ${isActive ? 'animate-bounce' : 'opacity-20'}`} />
+                   <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 [animation-delay:0.4s] ${isActive ? 'animate-bounce' : 'opacity-20'}`} />
+                   {isActive ? (language === 'ta' ? 'கேட்கிறேன்...' : 'Listening...') : 'Tap Mic to Start'}
+                </div>
+              )}
+            </div>
+         </div>
+
+         <div className="mt-12 pt-12 border-t border-white/5 flex flex-wrap justify-center gap-4 relative z-10">
+            {['Pudhumai Penn', 'Magalir Urimai', 'Housing Docs'].map((suggestion, i) => (
+              <button 
+                key={i} 
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-400 text-[10px] font-bold transition-all"
+              >
+                "{suggestion} ?"
+              </button>
+            ))}
+         </div>
       </div>
     </div>
   );

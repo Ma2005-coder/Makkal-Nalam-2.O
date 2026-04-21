@@ -27,7 +27,7 @@ const FileUploadArea: React.FC<FileUploadProps> = ({ label, docType, icon: Icon,
       <div className="flex gap-1 items-center">
         {docType === 'communityCert' && (
           <div className="flex gap-1">
-            {['FC', 'BC', 'MBC/DNC', 'SC', 'ST'].map(cat => (
+            {[t.fc, t.bc, t.mbc_dnc, t.sc, t.st].map(cat => (
               <span 
                 key={cat} 
                 className={`text-[8px] px-1.5 py-0.5 rounded-full font-black border transition-all ${
@@ -149,9 +149,28 @@ const AddressBlock: React.FC<AddressBlockProps> = ({ title, type, data, disabled
         try {
           const res = await reverseGeocodeToTN(pos.coords.latitude, pos.coords.longitude, language);
           if (res.district && res.taluk) {
-            onBulkUpdate(type, { district: res.district, taluk: res.taluk, village: res.village, pincode: res.pincode });
-            if (!taluks.includes(res.taluk)) setIsManualTaluk(true);
-            if (!predefinedVillages.includes(res.village)) setIsManualVillage(true);
+            onBulkUpdate(type, { 
+              doorNo: res.doorNo || data.doorNo,
+              district: res.district, 
+              taluk: res.taluk, 
+              village: res.village, 
+              pincode: res.pincode 
+            });
+            
+            // Re-fetch lists to check for manual entry
+            const currentDistTaluks = isTa ? TN_TALUKS_TA[res.district] : TN_TALUKS[res.district];
+            if (currentDistTaluks && !currentDistTaluks.includes(res.taluk)) {
+              setIsManualTaluk(true);
+            } else {
+              setIsManualTaluk(false);
+            }
+
+            const currentTalukVillages = isTa ? TN_VILLAGES_TA[res.taluk] : TN_VILLAGES[res.taluk];
+            if (currentTalukVillages && !currentTalukVillages.includes(res.village)) {
+              setIsManualVillage(true);
+            } else {
+              setIsManualVillage(false);
+            }
           }
         } catch (e) {
           console.error(e);
@@ -361,7 +380,7 @@ const MyProfile: React.FC<MyProfileProps> = ({ language, onTriggerAlert }) => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.myProfile}</h2>
-          <p className="text-slate-500 text-lg">Master Citizen Profile for Tamil Nadu e-Governance</p>
+          <p className="text-slate-500 text-lg">{t.masterProfileTitle}</p>
         </div>
         {saveStatus && <div className="bg-emerald-100 text-emerald-700 px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 animate-bounce"><CheckCircle size={16} /> {t.profileSaved}</div>}
       </div>
@@ -390,7 +409,7 @@ const MyProfile: React.FC<MyProfileProps> = ({ language, onTriggerAlert }) => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.emailLabel} ({isTa ? "விருப்பமானது" : "Optional"})</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.emailLabel} ({t.optional})</label>
                     <div className="relative group">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 pointer-events-none">
                         <Mail className="text-slate-400" size={14} />
@@ -482,7 +501,7 @@ const MyProfile: React.FC<MyProfileProps> = ({ language, onTriggerAlert }) => {
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.povertyLine}</label>
                     <select name="povertyStatus" value={profileData.povertyStatus} onChange={handleInputChange} className="w-full px-4 py-3 bg-white border-2 border-emerald-100 text-emerald-900 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%23059669%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat transition-all font-black uppercase tracking-tighter">
-                      <option value="Unknown">{isTa ? "தெரியாது" : "Select Status"}</option>
+                      <option value="Unknown">{t.selectStatus}</option>
                       <option value="BPL">{t.bpl}</option>
                       <option value="AAY">{t.aay}</option>
                       <option value="APL">{t.apl}</option>
@@ -547,12 +566,12 @@ const MyProfile: React.FC<MyProfileProps> = ({ language, onTriggerAlert }) => {
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.education}</label>
                     <select name="education" value={profileData.education} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%2364748b%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat transition-all font-medium">
                       <option value="">{t.selectQualification}</option>
-                      <option value="Illiterate">{isTa ? "கல்வியறிவற்றவர்" : "Illiterate"}</option>
-                      <option value="Below 10th">{isTa ? "10-ஆம் வகுப்புக்குக் கீழே" : "Below 10th"}</option>
-                      <option value="10th Pass">{isTa ? "10-ஆம் வகுப்பு தேர்ச்சி" : "10th Pass"}</option>
-                      <option value="12th Pass">{isTa ? "12-ஆம் வகுப்பு தேர்ச்சி" : "12th Pass"}</option>
-                      <option value="Graduate">{isTa ? "பட்டதாரி" : "Graduate"}</option>
-                      <option value="Post Graduate">{isTa ? "முதுகலை பட்டதாரி" : "Post Graduate"}</option>
+                      <option value="Illiterate">{t.illiterate}</option>
+                      <option value="Below 10th">{t.below10th}</option>
+                      <option value="10th Pass">{t.pass10th}</option>
+                      <option value="12th Pass">{t.pass12th}</option>
+                      <option value="Graduate">{t.graduate}</option>
+                      <option value="Post Graduate">{t.postGraduate}</option>
                     </select>
                   </div>
                 </div>

@@ -4,7 +4,7 @@ import { Language, UserEligibilityData } from "../types";
 
 // Always use named parameter for apiKey and assume process.env.API_KEY is available
 const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 };
 
 const getLanguageName = (lang: Language) => {
@@ -140,20 +140,29 @@ export const reverseGeocodeToTN = async (lat: number, lng: number, lang: Languag
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Translate coordinates (lat: ${lat}, lng: ${lng}) into a structured Tamil Nadu administrative address. 
-    You MUST return JSON format with these exact fields:
-    - district: Must match a valid Tamil Nadu district name.
-    - taluk: Must match a valid Tamil Nadu taluk name.
-    - village: The local village or area name.
-    - pincode: The 6-digit postal code.
+    contents: `Translate the precise coordinates (lat: ${lat}, lng: ${lng}) into a highly accurate Tamil Nadu administrative address.
+    Search for the exact location to identify:
+    1. The specific Village/Area/Panchayat name.
+    2. The relevant Taluk (Sub-district).
+    3. The District name.
+    4. The 6-digit Pincode.
     
-    Ensure names are standard and match official Tamil Nadu government records. 
+    You MUST return JSON format with these exact fields:
+    - doorNo: Suggest a likely street name or area if door number isn't found.
+    - district: Valid Tamil Nadu district.
+    - taluk: Valid Tamil Nadu taluk.
+    - village: Village or local area name.
+    - pincode: 6-digit postal code.
+    
+    Ensure names match official Tamil Nadu government records.
     Respond in ${langName}.`,
     config: {
+      tools: [{ googleSearch: {} }],
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
+          doorNo: { type: Type.STRING },
           district: { type: Type.STRING },
           taluk: { type: Type.STRING },
           village: { type: Type.STRING },
@@ -164,7 +173,12 @@ export const reverseGeocodeToTN = async (lat: number, lng: number, lang: Languag
     }
   });
 
-  return JSON.parse(response.text || '{}');
+  try {
+    return JSON.parse(response.text || '{}');
+  } catch (e) {
+    console.error("Failed to parse address JSON", e);
+    return {};
+  }
 };
 
 export const verifyDocumentQuality = async (base64Data: string, docType: string, lang: Language = 'en') => {
@@ -239,7 +253,11 @@ export const verifyDetailedEligibility = async (userData: UserEligibilityData, s
     Strictly evaluate if this Tamil Nadu resident meets ALL criteria for "${schemeName}". 
     Special Mandate: Prioritize poor and BPL (Below Poverty Line) citizens.
     
-    You MUST generate a highly detailed 6-step enrollment roadmap that covers the entire journey from "Master Profile Submission" to "Final Benefit Receipt / Enrollment Completion".
+    You MUST generate a highly detailed 6-step enrollment roadmap that covers the entire journey from "Master Profile Submission" to "Final Benefit Receipt / Enrollment Completion". 
+    Each step MUST include:
+    - label: Short title of the step.
+    - description: Clear explanation of what exactly happens and what the citizen needs to do (if anything).
+    - authority: The specific government official or department responsible for this step (e.g., "VAO (Village Administrative Officer)", "Revenue Inspector", "District Collector", "Lead Bank Manager", "Scheme Nodal Officer").
     
     Also, find the most appropriate official URL for applying to this scheme (e.g., https://tnesevai.tn.gov.in, https://pudhumaischeme.tn.gov.in, or similar official domain).
     
@@ -254,7 +272,7 @@ export const verifyDetailedEligibility = async (userData: UserEligibilityData, s
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -272,9 +290,10 @@ export const verifyDetailedEligibility = async (userData: UserEligibilityData, s
               type: Type.OBJECT,
               properties: {
                 label: { type: Type.STRING },
-                description: { type: Type.STRING }
+                description: { type: Type.STRING },
+                authority: { type: Type.STRING }
               },
-              required: ["label", "description"]
+              required: ["label", "description", "authority"]
             }
           }
         },
@@ -307,7 +326,7 @@ export const checkEligibility = async (userInput: string, lang: Language = 'en')
   const ai = getAIClient();
   const langName = getLanguageName(lang);
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     contents: `Analyze user situation for Tamil Nadu state welfare schemes: ${userInput}. Suggest matches. Respond in ${langName}.`,
     config: {
       thinkingConfig: { thinkingBudget: 1000 }
@@ -315,6 +334,118 @@ export const checkEligibility = async (userInput: string, lang: Language = 'en')
   });
 
   return response.text;
+};
+
+export const analyzeCivicPhoto = async (base64Data: string, issueType: string, lang: Language = 'en') => {
+  const ai = getAIClient();
+  const langName = getLanguageName(lang);
+  
+  const mimeTypeMatch = base64Data.match(/^data:(.*);base64,/);
+  const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg';
+  const cleanBase64 = base64Data.replace(/^data:.*;base64,/, '');
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: cleanBase64,
+          },
+        },
+        {
+          text: `Analyze this image of a civic issue in Tamil Nadu. The user has categorized it as: "${issueType}". 
+          Please identify:
+          1. Exact nature of damage/issue.
+          2. Severity (Low, Medium, High, Critical).
+          3. Technical details:
+             - If it's a street light: Look for any "Pole ID" or asset numbers visible on the pole.
+             - If it's a road: Estimate pothole size or road damage extent.
+             - If it's garbage: Identify volume and potential health hazards.
+          4. Safety risks for citizens.
+          5. Verify if the category "${issueType}" is correct. If not, suggest the most accurate one (garbage, light, road, drainage, water, traffic, property, other).
+          
+          Respond in ${langName} as JSON: { 
+            "analysis": string, 
+            "severity": string, 
+            "details": string, 
+            "safetyRisk": string,
+            "detectedIssueType": string,
+            "identifier": string
+          }`
+        }
+      ]
+    },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          analysis: { type: Type.STRING },
+          severity: { type: Type.STRING },
+          details: { type: Type.STRING },
+          safetyRisk: { type: Type.STRING },
+          detectedIssueType: { type: Type.STRING },
+          identifier: { type: Type.STRING }
+        },
+        required: ["analysis", "severity", "details", "safetyRisk", "detectedIssueType", "identifier"]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || '{}');
+};
+
+export const getProactiveRecommendations = async (userData: UserEligibilityData, lang: Language = 'en') => {
+  const ai = getAIClient();
+  const langName = getLanguageName(lang);
+  
+  const profileSummary = `
+    - Occupation: ${userData.occupation}
+    - Annual Income: ₹${userData.incomePeriod === 'monthly' ? userData.income * 12 : userData.income}
+    - Family Members: ${userData.familySize}
+    - Documents available: ${Object.keys(userData.documents).filter(k => !!(userData.documents as any)[k]).join(', ')}
+    - Poverty Status: ${userData.povertyStatus}
+    - Gender: ${userData.gender}
+    - Education: ${userData.education}
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: `Based on this Tamil Nadu citizen's profile: ${profileSummary}, identify 2-3 specific government schemes they are ALMOST CERTAINLY eligible for but haven't applied to.
+    Create proactive "Agent" style notifications.
+    
+    Respond in ${langName} as a JSON array of objects:
+    - id: string
+    - type: "scheme"
+    - title: "Scheme Match Found!"
+    - description: "e.g., Based on your new Income Certificate, you qualify for..."
+    - schemeId: string (generic ID or name)
+    - cta: "Draft Application"
+    
+    Respond in ${langName}.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            type: { type: Type.STRING },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            schemeId: { type: Type.STRING },
+            cta: { type: Type.STRING }
+          },
+          required: ["id", "type", "title", "description", "schemeId", "cta"]
+        }
+      }
+    }
+  });
+
+  return JSON.parse(response.text || '[]');
 };
 
 export const getDashboardStats = async () => {

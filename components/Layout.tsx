@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, MessageSquare, Mic, AlertCircle, Menu, X, MapPin, Languages, ChevronDown, CheckSquare, UserCircle, LogOut, LayoutDashboard, User, ShieldCheck, Bookmark, LayoutGrid, Sparkles } from 'lucide-react';
+import { Home, Search, MessageSquare, Mic, AlertCircle, Menu, X, MapPin, Languages, ChevronDown, CheckSquare, UserCircle, LogOut, LayoutDashboard, User, ShieldCheck, Bookmark, LayoutGrid, Sparkles, Bell, Trash2, Construction } from 'lucide-react';
 import { AppView, Language } from '../types';
 import { translations } from '../translations';
 import AppLogo from './AppLogo';
@@ -29,9 +29,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, la
       label: t.dashboard,
       items: [
         { id: AppView.DASHBOARD, label: t.home, icon: Home },
+        { id: AppView.ANNOUNCEMENTS, label: t.makkalFeed, icon: Bell },
         { id: AppView.PROFILE, label: t.myProfile, icon: UserCircle },
         { id: AppView.DOCUMENTS, label: t.docReadiness, icon: ShieldCheck },
+      ]
+    },
+    {
+      label: t.myWelfare,
+      items: [
         { id: AppView.EXPLORER, label: t.schemeFinder, icon: Search },
+        { id: AppView.APPLICATIONS, label: t.activeAppTitle, icon: LayoutGrid },
+        { id: AppView.SAVED, label: t.offlineReminders, icon: Bookmark },
       ]
     },
     {
@@ -46,6 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, la
       label: t.support,
       items: [
         { id: AppView.LOCATIONS, label: t.serviceCenters, icon: MapPin },
+        { id: AppView.CIVIC_REPORT, label: t.garbageReport, icon: Construction },
         { id: AppView.GRIEVANCE, label: t.grievance, icon: AlertCircle },
       ]
     }
